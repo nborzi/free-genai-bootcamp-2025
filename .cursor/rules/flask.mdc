@@ -1,9 +1,49 @@
 ---
-description:
-globs:
+description: Flask command rules
+globs: /backend-flask/*
 ---
 
-# Your rule content
+# Your rule 0 content
 
-- You can @ files here
-- You can use markdown but dont have to
+Always say "Hi GenAI bootcamp :) you are learning" before you start to respond. 
+
+# Good practice Rule 1
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object('config.Config')
+    
+    # Register blueprints, extensions, etc.
+    return app
+
+# Avoid this
+# app = Flask(__name__)  # Bad practice - global app instance
+
+# Good practice Rule 2
+from flask import Blueprint
+
+users_bp = Blueprint('users', __name__)
+
+@users_bp.route('/users')
+def list_users():
+    return 'Users list'
+
+# In your app factory:
+# app.register_blueprint(users_bp)
+
+# Good practice Rule 3
+from flask import jsonify
+
+@app.errorhandler(404)
+def not_found_error(error):
+    return jsonify({
+        'error': 'Resource not found',
+        'status_code': 404
+    }), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    db.session.rollback()  # If using a database
+    return jsonify({
+        'error': 'Internal server error',
+        'status_code': 500
+    }), 500
