@@ -14,24 +14,18 @@ type Group struct {
 	Name string `json:"name"`
 }
 
-type WordGroup struct {
-	ID      int `json:"id"`
-	WordID  int `json:"word_id"`
-	GroupID int `json:"group_id"`
-}
-
 type StudySession struct {
 	ID              int       `json:"id"`
 	GroupID         int       `json:"group_id"`
-	CreatedAt       time.Time `json:"created_at"`
 	StudyActivityID int       `json:"study_activity_id"`
+	CreatedAt       time.Time `json:"created_at"`
 }
 
 type StudyActivity struct {
-	ID              int       `json:"id"`
-	StudySessionID  int       `json:"study_session_id"`
-	GroupID         int       `json:"group_id"`
-	CreatedAt       time.Time `json:"created_at"`
+	ID             int       `json:"id"`
+	StudySessionID int       `json:"study_session_id"`
+	GroupID        int       `json:"group_id"`
+	CreatedAt      time.Time `json:"created_at"`
 }
 
 type WordReviewItem struct {
@@ -39,4 +33,24 @@ type WordReviewItem struct {
 	StudySessionID int       `json:"study_session_id"`
 	Correct        bool      `json:"correct"`
 	CreatedAt      time.Time `json:"created_at"`
+}
+
+type DashboardStats struct {
+	LastSession    *StudySession `json:"last_session"`
+	Progress       Progress      `json:"progress"`
+	QuickStats     QuickStats    `json:"stats"`
+}
+
+type Progress struct {
+	TotalWords     int     `json:"total_words"`
+	WordsStudied   int     `json:"words_studied"`
+	CorrectAnswers int     `json:"correct_answers"`
+	Accuracy       float64 `json:"accuracy"`
+}
+
+type QuickStats struct {
+	StudySessions  int `json:"study_sessions"`
+	WordsReviewed  int `json:"words_reviewed"`
+	GroupsStudied  int `json:"groups_studied"`
+	DaysStreak     int `json:"days_streak"`
 }

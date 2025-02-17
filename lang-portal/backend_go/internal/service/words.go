@@ -1,11 +1,24 @@
 package service
 
+import (
+	"database/sql"
+	"lang-portal/internal/models"
+)
+
+type WordWithStats struct {
+	models.Word
+	CorrectCount int `json:"correct_count"`
+	WrongCount   int `json:"wrong_count"`
+}
+
 func GetWords(page int) ([]WordWithStats, int, error) {
 	offset := (page - 1) * 100
 	query := `
 		SELECT 
+			w.id,
 			w.spanish,
 			w.english,
+			w.parts,
 			COUNT(CASE WHEN wri.correct THEN 1 END) as correct_count,
 			COUNT(CASE WHEN NOT wri.correct THEN 1 END) as wrong_count
 		FROM words w
@@ -24,7 +37,7 @@ func GetWords(page int) ([]WordWithStats, int, error) {
 	var words []WordWithStats
 	for rows.Next() {
 		var w WordWithStats
-		err := rows.Scan(&w.Spanish, &w.English, &w.CorrectCount, &w.WrongCount)
+		err := rows.Scan(&w.ID, &w.Spanish, &w.English, &w.Parts, &w.CorrectCount, &w.WrongCount)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -41,67 +54,46 @@ func GetWords(page int) ([]WordWithStats, int, error) {
 	return words, total, nil
 }
 
-func GetWord(id int) (*struct {
-	WordWithStats
-	Groups []struct {
-		ID   int    `json:"id"`
-		Name string `json:"name"`
-	} `json:"groups"`
-}, error) {
-	word := &struct {
-		WordWithStats
-		Groups []struct {
-			ID   int    `json:"id"`
-			Name string `json:"name"`
-		} `json:"groups"`
-	}{}
+func GetWord(id int) (*WordWithStats, error) {
+	var word WordWithStats
 
-	// Get word details with stats
 	err := db.QueryRow(`
 		SELECT 
+			w.id,
 			w.spanish,
 			w.english,
+			w.parts,
 			COUNT(CASE WHEN wri.correct THEN 1 END) as correct_count,
 			COUNT(CASE WHEN NOT wri.correct THEN 1 END) as wrong_count
 		FROM words w
 		LEFT JOIN word_review_items wri ON w.id = wri.word_id
 		WHERE w.id = ?
 		GROUP BY w.id
-	`, id).Scan(&word.Spanish, &word.English, &word.CorrectCount, &word.WrongCount)
+	`, id).Scan(&word.ID, &word.Spanish, &word.English, &word.Parts, &word.CorrectCount, &word.WrongCount)
+
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	// Get groups for the word
-	rows, err := db.Query(`
-		SELECT g.id, g.name
-		FROM groups g
-		JOIN words_groups wg ON g.id = wg.group_id
-		WHERE wg.word_id = ?
-	`, id)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var group struct {
-			ID   int    `json:"id"`
-			Name string `json:"name"`
-		}
-		err := rows.Scan(&group.ID, &group.Name)
-		if err != nil {
-			return nil, err
-		}
-		word.Groups = append(word.Groups, group)
-	}
-
-	return word, nil
+	return &word, nil
 }
 
-type WordWithStats struct {
-	Spanish      string `json:"spanish"`
-	English      string `json:"english"`
-	CorrectCount int    `json:"correct_count"`
-	WrongCount   int    `json:"wrong_count"`
+func ReviewWord(wordID int, correct bool) error {
+	// Get the latest study session
+	var sessionID int
+	err := db.QueryRow("SELECT id FROM study_sessions ORDER BY created_at DESC LIMIT 1").Scan(&sessionID)
+	if err != nil {
+		return err
+	}
+
+	// Insert the review
+	_, err = db.Exec(`
+		INSERT INTO word_review_items (word_id, study_session_id, correct) 
+		VALUES (?, ?, ?)
+	`, wordID, sessionID, correct)
+
+	return err
 }

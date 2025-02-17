@@ -33,7 +33,7 @@ func GetWords(c *gin.Context) {
 func GetWord(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid word ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
 		return
 	}
 
@@ -46,6 +46,28 @@ func GetWord(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Word not found"})
 		return
 	}
-
 	c.JSON(http.StatusOK, word)
+}
+
+func ReviewWord(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
+		return
+	}
+
+	var review struct {
+		Correct bool `json:"correct"`
+	}
+	if err := c.BindJSON(&review); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	err = service.ReviewWord(id, review.Correct)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "success"})
 }

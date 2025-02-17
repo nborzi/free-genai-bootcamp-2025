@@ -33,18 +33,26 @@ func main() {
 	api := r.Group("/api")
 	{
 		// Dashboard routes
-		api.GET("/dashboard/last_study_session", handlers.GetLastStudySession)
-		api.GET("/dashboard/study_progress", handlers.GetStudyProgress)
-		api.GET("/dashboard/quick-stats", handlers.GetQuickStats)
-
+		api.GET("/dashboard", handlers.GetDashboard)
+		
 		// Study activities routes
-		api.GET("/study_activities/:id", handlers.GetStudyActivity)
-		api.GET("/study_activities/:id/study_sessions", handlers.GetStudyActivitySessions)
-		api.POST("/study_activities", handlers.CreateStudyActivity)
-
+		api.GET("/study-activities", handlers.GetStudyActivities)
+		api.GET("/study-activities/:id", handlers.GetStudyActivity)
+		api.POST("/study-activities/:id/start", handlers.StartStudyActivity)
+		
+		// Study sessions routes
+		api.GET("/study-sessions", handlers.GetStudySessions)
+		api.GET("/study-sessions/:id", handlers.GetStudySession)
+		
 		// Words routes
 		api.GET("/words", handlers.GetWords)
 		api.GET("/words/:id", handlers.GetWord)
+		api.POST("/words/:id/review", handlers.ReviewWord)
+		
+		// Groups routes
+		api.GET("/groups", handlers.GetGroups)
+		api.GET("/groups/:id", handlers.GetGroup)
+		api.GET("/groups/:id/words", handlers.GetGroupWords)
 	}
 
 	log.Println("Server starting on http://localhost:8081")

@@ -7,10 +7,19 @@ import (
 	"strconv"
 )
 
+func GetStudyActivities(c *gin.Context) {
+	activities, err := service.GetStudyActivities()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, activities)
+}
+
 func GetStudyActivity(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid activity ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
 		return
 	}
 
@@ -20,10 +29,53 @@ func GetStudyActivity(c *gin.Context) {
 		return
 	}
 	if activity == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Activity not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "Study activity not found"})
 		return
 	}
 	c.JSON(http.StatusOK, activity)
+}
+
+func StartStudyActivity(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
+		return
+	}
+
+	session, err := service.StartStudyActivity(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, session)
+}
+
+func GetStudySessions(c *gin.Context) {
+	sessions, err := service.GetStudySessions()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, sessions)
+}
+
+func GetStudySession(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
+		return
+	}
+
+	session, err := service.GetStudySession(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if session == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Study session not found"})
+		return
+	}
+	c.JSON(http.StatusOK, session)
 }
 
 func GetStudyActivitySessions(c *gin.Context) {

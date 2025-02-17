@@ -2,6 +2,7 @@ package service
 
 import (
 	"lang-portal/internal/models"
+	"time"
 )
 
 type StudyActivity struct {
@@ -20,14 +21,83 @@ type StudySession struct {
 	ReviewItemCount int    `json:"review_items_count"`
 }
 
-func GetStudyActivity(id int) (*StudyActivity, error) {
-	activity := &StudyActivity{
-		ID:           id,
-		Name:         "Vocabulary Quiz",
-		ThumbnailURL: "https://example.com/thumbnail.jpg",
-		Description:  "Practice your vocabulary with flashcards",
+func GetStudyActivities() ([]models.StudyActivity, error) {
+	var activities []models.StudyActivity
+	rows, err := db.Query("SELECT id, study_session_id, group_id, created_at FROM study_activities")
+	if err != nil {
+		return nil, err
 	}
-	return activity, nil
+	defer rows.Close()
+
+	for rows.Next() {
+		var activity models.StudyActivity
+		if err := rows.Scan(&activity.ID, &activity.StudySessionID, &activity.GroupID, &activity.CreatedAt); err != nil {
+			return nil, err
+		}
+		activities = append(activities, activity)
+	}
+	return activities, nil
+}
+
+func GetStudyActivity(id int) (*models.StudyActivity, error) {
+	var activity models.StudyActivity
+	err := db.QueryRow("SELECT id, study_session_id, group_id, created_at FROM study_activities WHERE id = ?", id).
+		Scan(&activity.ID, &activity.StudySessionID, &activity.GroupID, &activity.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &activity, nil
+}
+
+func StartStudyActivity(id int) (*models.StudySession, error) {
+	// Create a new study session for the activity
+	result, err := db.Exec("INSERT INTO study_sessions (group_id, study_activity_id, created_at) VALUES (?, ?, ?)",
+		1, id, time.Now())
+	if err != nil {
+		return nil, err
+	}
+
+	sessionID, err := result.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	var session models.StudySession
+	err = db.QueryRow("SELECT id, group_id, study_activity_id, created_at FROM study_sessions WHERE id = ?", sessionID).
+		Scan(&session.ID, &session.GroupID, &session.StudyActivityID, &session.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return &session, nil
+}
+
+func GetStudySessions() ([]models.StudySession, error) {
+	var sessions []models.StudySession
+	rows, err := db.Query("SELECT id, group_id, study_activity_id, created_at FROM study_sessions ORDER BY created_at DESC")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var session models.StudySession
+		if err := rows.Scan(&session.ID, &session.GroupID, &session.StudyActivityID, &session.CreatedAt); err != nil {
+			return nil, err
+		}
+		sessions = append(sessions, session)
+	}
+	return sessions, nil
+}
+
+func GetStudySession(id int) (*models.StudySession, error) {
+	var session models.StudySession
+	err := db.QueryRow("SELECT id, group_id, study_activity_id, created_at FROM study_sessions WHERE id = ?", id).
+		Scan(&session.ID, &session.GroupID, &session.StudyActivityID, &session.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &session, nil
 }
 
 func GetStudyActivitySessions(activityID int, page int) ([]StudySession, int, error) {
